@@ -23,7 +23,7 @@ jobs:
     vars: inherit
   hackers-auth:
     if: ${{ fromJSON(inputs.manifest)['sn-hackers-auth']['hackers-auth'].deploy }}
-    uses: cb-golden-demo-org/sn-hackers-auth/.cloudbees/workflows/deploy.yaml
+    uses: shozab-unify-examples/sn-hackers-auth/.cloudbees/workflows/deploy.yaml
     with:
       artifact-url: ${{ fromJSON(inputs.manifest)['sn-hackers-auth']['hackers-auth'].url }}
       artifact-id: ${{ fromJSON(inputs.manifest)['sn-hackers-auth']['hackers-auth'].id }}
