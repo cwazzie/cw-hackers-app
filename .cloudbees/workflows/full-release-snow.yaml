@@ -20,14 +20,12 @@ metadata:
     - name: Quality Assurance
       jobs:
         - deploy-to-qa
-        - enable-feature-flags-qa
         - run-tests-qa
         - exit-criteria-qa
     - name: Staging
       jobs:
         - release-manager-approval
         - deploy-to-staging
-        - enable-feature-flags-staging
         - run-tests-staging
         - exit-criteria-staging
     - name: Production
@@ -63,8 +61,7 @@ jobs:
             **URL:** ${{ steps.create-release-issue.outputs.issue-url }}
           format: MARKDOWN
   gather-evidence:
-    needs:
-      - create-release-issue
+    needs: create-release-issue
     outputs:
       issues: ${{ steps.get-issues.outputs.issues }}
       total: ${{ steps.get-issues.outputs.total }}
@@ -130,8 +127,7 @@ jobs:
             ${{ steps.checkout-hackers-api.outputs.commit-url}}
           format: MARKDOWN
   quality-checks:
-    needs:
-      - gather-evidence
+    needs: gather-evidence
     steps:
       - name: Security Vulnerability Scan
         id: security-scan
@@ -275,60 +271,23 @@ jobs:
             ## Outstanding Jira Tickets
             ${{ needs.gather-evidence.outputs.issues-table }}
   approval:
-    needs:
-      - update-jira-tickets
+    needs: update-jira-tickets
     timeout-minutes: 60
     with:
       instructions: ""
       disallowLaunchByUser: false
     delegates: cloudbees-io/manual-approval/custom-job.yml@v1
   deploy-to-qa:
-    needs:
-      - approval
+    needs: approval
     uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
       environment: sn-hackers-qa
     secrets: inherit
     vars: inherit
-  enable-feature-flags-qa:
-    environment: sn-hackers-qa
-    needs:
-      - deploy-to-qa
-    steps:
-      - name: Update flag configuration
-        uses: https://github.com/cloudbees-days/fm-update-flag
-        id: config-update
-        with:
-          token: ${{ secrets.UNIFY_TOKEN }}
-          org-id: e8854086-415f-4497-a717-522d5a8af4f8
-          application-name: sn-hackers-app
-          environment-name: sn-hackers-qa
-          flag-name: default.score
-          use-org-as-app: false
-          flag-config: |
-            enabled: true
-            defaultValue: true
-      - name: Publish evidence
-        uses: cloudbees-io/publish-evidence-item@v1
-        with:
-          content: |-
-            ## Flag Configuration Updated
-
-            **Flag ID:** ${{ steps.config-update.outputs.flag-id }}
-            **Update Success:** ${{ steps.config-update.outputs.success }}
-
-            **Applied Configuration:**
-            ```json
-            ${{ steps.config-update.outputs.configuration }}
-            ```
-
-            ✅ Flag configuration update successful
-          format: MARKDOWN
   run-tests-qa:
     environment: sn-hackers-qa
-    needs:
-      - enable-feature-flags-qa
+    needs: deploy-to-qa
     outputs:
       test-results: ${{ steps.test-execution.outputs.results }}
       test-coverage: ${{ steps.test-execution.outputs.coverage }}
@@ -445,8 +404,7 @@ jobs:
           format: MARKDOWN
   exit-criteria-qa:
     environment: sn-hackers-qa
-    needs:
-      - run-tests-qa
+    needs: run-tests-qa
     outputs:
       gate-status: ${{ steps.evaluate-criteria.outputs.status }}
       blocking-issues: ${{ steps.check-issues.outputs.blocking-count }}
@@ -548,8 +506,7 @@ jobs:
             **QA Exit Criteria**: PASSED - Ready for Release Manager approval
           format: MARKDOWN
   release-manager-approval:
-    needs:
-      - exit-criteria-qa
+    needs: exit-criteria-qa
     timeout-minutes: 60
     delegates: cloudbees-io/manual-approval/custom-job.yml@v1
     with:
@@ -558,52 +515,16 @@ jobs:
       approvers: ""
       notifyAllEligibleUsers: false
   deploy-to-staging:
-    needs:
-      - release-manager-approval
+    needs: release-manager-approval
     uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
       environment: sn-hackers-staging
     secrets: inherit
     vars: inherit
-  enable-feature-flags-staging:
-    environment: sn-hackers-staging
-    needs:
-      - deploy-to-staging
-    steps:
-      - name: Update flag configuration
-        uses: https://github.com/cloudbees-days/fm-update-flag
-        id: config-update
-        with:
-          token: ${{ secrets.UNIFY_TOKEN }}
-          org-id: e8854086-415f-4497-a717-522d5a8af4f8
-          application-name: sn-hackers-app
-          environment-name: sn-hackers-staging
-          flag-name: default.score
-          use-org-as-app: false
-          flag-config: |
-            enabled: true
-            defaultValue: true
-      - name: Publish evidence
-        uses: cloudbees-io/publish-evidence-item@v1
-        with:
-          content: |-
-            ## Flag Configuration Updated
-
-            **Flag ID:** ${{ steps.config-update.outputs.flag-id }}
-            **Update Success:** ${{ steps.config-update.outputs.success }}
-
-            **Applied Configuration:**
-            ```json
-            ${{ steps.config-update.outputs.configuration }}
-            ```
-
-            ✅ Flag configuration update successful
-          format: MARKDOWN
   run-tests-staging:
     environment: sn-hackers-staging
-    needs:
-      - enable-feature-flags-staging
+    needs: deploy-to-staging
     outputs:
       test-results: ${{ steps.staging-tests.outputs.results }}
       e2e-results: ${{ steps.e2e-tests.outputs.results }}
@@ -721,8 +642,7 @@ jobs:
           format: MARKDOWN
   exit-criteria-staging:
     environment: sn-hackers-staging
-    needs:
-      - run-tests-staging
+    needs: run-tests-staging
     outputs:
       production-readiness: ${{ steps.readiness-check.outputs.status }}
       risk-assessment: ${{ steps.risk-analysis.outputs.level }}
@@ -846,8 +766,7 @@ jobs:
     secrets: inherit
     vars: inherit
   deploy-to-prod:
-    needs:
-      - wait-for-snow-change-request
+    needs: wait-for-snow-change-request
     uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
@@ -856,8 +775,7 @@ jobs:
     vars: inherit
   run-smoke-tests:
     environment: sn-hackers-prod
-    needs:
-      - deploy-to-prod
+    needs: deploy-to-prod
     outputs:
       health-status: ${{ steps.health-check.outputs.status }}
       smoke-results: ${{ steps.smoke-tests.outputs.results }}
