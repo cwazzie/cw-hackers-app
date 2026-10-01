@@ -279,15 +279,15 @@ jobs:
     delegates: cloudbees-io/manual-approval/custom-job.yml@v1
   deploy-to-qa:
     needs: approval
-    uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
+    uses: cwazzie/cw-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
       environment: cw-hackers-qa
     secrets: inherit
     vars: inherit
   run-tests-qa:
-    environment: sn-hackers-qa
     needs: deploy-to-qa
+    environment: cw-qa
     outputs:
       test-results: ${{ steps.test-execution.outputs.results }}
       test-coverage: ${{ steps.test-execution.outputs.coverage }}
@@ -403,8 +403,8 @@ jobs:
             **QA Test Gate**: PASSED - Ready for staging
           format: MARKDOWN
   exit-criteria-qa:
-    environment: sn-hackers-qa
     needs: run-tests-qa
+    environment: cw-qa
     outputs:
       gate-status: ${{ steps.evaluate-criteria.outputs.status }}
       blocking-issues: ${{ steps.check-issues.outputs.blocking-count }}
@@ -516,15 +516,15 @@ jobs:
       notifyAllEligibleUsers: false
   deploy-to-staging:
     needs: release-manager-approval
-    uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
+    uses: cwazzie/cw-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
       environment: cw-hackers-staging
     secrets: inherit
     vars: inherit
   run-tests-staging:
-    environment: sn-hackers-staging
     needs: deploy-to-staging
+    environment: cw-staging
     outputs:
       test-results: ${{ steps.staging-tests.outputs.results }}
       e2e-results: ${{ steps.e2e-tests.outputs.results }}
@@ -641,8 +641,8 @@ jobs:
             **Staging Gate**: PASSED - Ready for production consideration
           format: MARKDOWN
   exit-criteria-staging:
-    environment: sn-hackers-staging
     needs: run-tests-staging
+    environment: cw-staging
     outputs:
       production-readiness: ${{ steps.readiness-check.outputs.status }}
       risk-assessment: ${{ steps.risk-analysis.outputs.level }}
@@ -767,7 +767,7 @@ jobs:
     vars: inherit
   deploy-to-prod:
     needs: wait-for-snow-change-request
-    uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
+    uses: cwazzie/cw-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
       environment: cw-hackers-prod
