@@ -282,7 +282,7 @@ jobs:
     uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
-      environment: sn-hackers-qa
+      environment: cw-hackers-qa
     secrets: inherit
     vars: inherit
   run-tests-qa:
@@ -519,7 +519,7 @@ jobs:
     uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
-      environment: sn-hackers-staging
+      environment: cw-hackers-staging
     secrets: inherit
     vars: inherit
   run-tests-staging:
@@ -762,7 +762,7 @@ jobs:
           format: MARKDOWN
   wait-for-snow-change-request:
     needs: exit-criteria-staging
-    uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/sn-approval.yaml
+    uses: cwazzie/cw-hackers-app/.cloudbees/workflows/sn-approval.yaml
     secrets: inherit
     vars: inherit
   deploy-to-prod:
@@ -770,7 +770,7 @@ jobs:
     uses: shozab-unify-examples/sn-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
-      environment: sn-hackers-prod
+      environment: cw-hackers-prod
     secrets: inherit
     vars: inherit
   run-smoke-tests:
