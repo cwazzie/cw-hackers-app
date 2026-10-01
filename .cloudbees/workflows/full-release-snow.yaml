@@ -282,7 +282,7 @@ jobs:
     uses: cwazzie/cw-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
-      environment: cw-hackers-qa
+      environment: cw-qa
     secrets: inherit
     vars: inherit
   run-tests-qa:
@@ -519,7 +519,7 @@ jobs:
     uses: cwazzie/cw-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
-      environment: cw-hackers-staging
+      environment: cw-staging
     secrets: inherit
     vars: inherit
   run-tests-staging:
@@ -770,7 +770,7 @@ jobs:
     uses: cwazzie/cw-hackers-app/.cloudbees/workflows/deployer.yaml
     with:
       manifest: ${{ inputs.manifest }}
-      environment: cw-hackers-prod
+      environment: cw-prod
     secrets: inherit
     vars: inherit
   run-smoke-tests:
