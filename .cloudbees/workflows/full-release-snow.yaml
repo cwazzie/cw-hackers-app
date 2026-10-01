@@ -774,8 +774,8 @@ jobs:
     secrets: inherit
     vars: inherit
   run-smoke-tests:
-    environment: sn-hackers-prod
     needs: deploy-to-prod
+    environment: cw-prod
     outputs:
       health-status: ${{ steps.health-check.outputs.status }}
       smoke-results: ${{ steps.smoke-tests.outputs.results }}
