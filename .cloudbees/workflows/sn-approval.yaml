@@ -1,3 +1,4 @@
+
 apiVersion: automation.cloudbees.io/v1alpha1
 kind: workflow
 name: SN-approval
@@ -10,7 +11,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - id: create-cr
-        name: Trigger Servicenow Create 1
+        name: Trigger Servicenow Create
         uses: cloudbees-io/servicenow@v1
         with:
           url: ${{ vars.SERVICENOW_URL }}
@@ -19,6 +20,9 @@ jobs:
           action-type: create
           short-description: Production request - Testing
  
+      # Moving to Assess requests approval in ServiceNow.
+      # Assess -> Authorize -> Scheduled is driven by ServiceNow approvals,
+      # not by the workflow (the state model blocks setting those by API).
       - id: update-cr-assess
         name: Trigger Servicenow Update Assess state
         uses: cloudbees-io/servicenow@v1
@@ -31,28 +35,23 @@ jobs:
           state: Assess
           assignment-group: Change Management
  
-      - id: update-cr-authorize
-        name: Trigger Servicenow Update Authorize state
-        uses: cloudbees-io/servicenow@v1
+      # Polls every 3 min for up to 60 min (20 checks) until the change
+      # request's approval field is Approved (or Rejected).
+      - id: wait-for-approval
+        name: Trigger Servicenow Wait For Approval
+        uses: cloudbees-io/servicenow-poll-for-approval@v1
         with:
           url: ${{ vars.SERVICENOW_URL }}
           username: ${{ secrets.SERVICENOW_USERNAME }}
           password: ${{ secrets.SERVICENOW_PASSWORD }}
-          action-type: update
-          sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
-          state: Authorize
+          cr-number: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).number }}
+          poll-interval: 3
+          poll-duration: 60
+          approval-field-value-approved: Approved
+          approval-field-value-rejected: Rejected
  
-      - id: update-cr-scheduled
-        name: Trigger Servicenow Update Scheduled state
-        uses: cloudbees-io/servicenow@v1
-        with:
-          url: ${{ vars.SERVICENOW_URL }}
-          username: ${{ secrets.SERVICENOW_USERNAME }}
-          password: ${{ secrets.SERVICENOW_PASSWORD }}
-          action-type: update
-          sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
-          state: Scheduled
- 
+      # After approval ServiceNow moves the CR to Scheduled; the remaining
+      # transitions can be set by the workflow.
       - id: update-cr-implement
         name: Trigger Servicenow Update Implement state
         uses: cloudbees-io/servicenow@v1
@@ -74,22 +73,6 @@ jobs:
           action-type: update
           sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
           state: Review
- 
-      # Polls every 3 min for up to 60 min (20 checks).
-      # Only the approval field is checked: the state is already set to Review
-      # by the step above, so checking state could let the poll pass immediately.
-      - id: wait-for-approval
-        name: Trigger Servicenow Wait For Approval
-        uses: cloudbees-io/servicenow-poll-for-approval@v1
-        with:
-          url: ${{ vars.SERVICENOW_URL }}
-          username: ${{ secrets.SERVICENOW_USERNAME }}
-          password: ${{ secrets.SERVICENOW_PASSWORD }}
-          cr-number: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).number }}
-          poll-interval: 3
-          poll-duration: 60
-          approval-field-value-approved: Approved
-          approval-field-value-rejected: Rejected
  
       - id: close-cr
         name: Trigger Servicenow Update Closed state
