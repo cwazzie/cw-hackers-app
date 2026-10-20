@@ -1,3 +1,5 @@
+
+Sn approval · YAML
 apiVersion: automation.cloudbees.io/v1alpha1
 kind: workflow
 name: SN-approval
@@ -6,6 +8,8 @@ on:
   workflow_call:
 jobs:
   create-approve-servicenow-job:
+    # 60 min approval poll + time for the create/update/close steps
+    timeout-minutes: 90
     steps:
       - id: create-cr
         name: Trigger Servicenow Create 1
@@ -16,7 +20,7 @@ jobs:
           password: ${{ secrets.SERVICENOW_PASSWORD }}
           action-type: create
           short-description: Production request - Testing
-
+ 
       - id: update-cr-assess
         name: Trigger Servicenow Update Assess state
         uses: cloudbees-io/servicenow@v1
@@ -28,6 +32,7 @@ jobs:
           sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
           state: Assess
           assignment-group: Change Management
+ 
       - id: update-cr-authorize
         name: Trigger Servicenow Update Authorize state
         uses: cloudbees-io/servicenow@v1
@@ -38,6 +43,7 @@ jobs:
           action-type: update
           sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
           state: Authorize
+ 
       - id: update-cr-scheduled
         name: Trigger Servicenow Update Scheduled state
         uses: cloudbees-io/servicenow@v1
@@ -48,6 +54,7 @@ jobs:
           action-type: update
           sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
           state: Scheduled
+ 
       - id: update-cr-implement
         name: Trigger Servicenow Update Implement state
         uses: cloudbees-io/servicenow@v1
@@ -58,8 +65,9 @@ jobs:
           action-type: update
           sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
           state: Implement
+ 
       - id: update-cr-review
-        name: Trigger Servicenow Update Implement state
+        name: Trigger Servicenow Update Review state
         uses: cloudbees-io/servicenow@v1
         with:
           url: ${{ vars.SERVICENOW_URL }}
@@ -68,7 +76,10 @@ jobs:
           action-type: update
           sys-id: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).sys_id }}
           state: Review
-
+ 
+      # Polls every 3 min for up to 60 min (20 checks).
+      # Only the approval field is checked: the state is already set to Review
+      # by the step above, so checking state could let the poll pass immediately.
       - id: wait-for-approval
         name: Trigger Servicenow Wait For Approval
         uses: cloudbees-io/servicenow-poll-for-approval@v1
@@ -77,12 +88,11 @@ jobs:
           username: ${{ secrets.SERVICENOW_USERNAME }}
           password: ${{ secrets.SERVICENOW_PASSWORD }}
           cr-number: ${{ fromJSON(steps.create-cr.outputs.servicenow-output).number }}
-          poll-interval: 1
-          poll-duration: 10
-          state-field-value: Review
+          poll-interval: 3
+          poll-duration: 60
           approval-field-value-approved: Approved
           approval-field-value-rejected: Rejected
-
+ 
       - id: close-cr
         name: Trigger Servicenow Update Closed state
         uses: cloudbees-io/servicenow@v1
@@ -96,3 +106,7 @@ jobs:
           state: Closed
           close-code: Successful
           close-notes: Successfully completed
+ 
+Claude finished the response
+
+
