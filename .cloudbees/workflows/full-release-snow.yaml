@@ -763,7 +763,8 @@ jobs:
   wait-for-snow-change-request:
     needs: exit-criteria-staging
     uses: cwazzie/cw-hackers-app/.cloudbees/workflows/sn-approval.yaml
-    secrets: inherit
+    secrets:
+      https://ven02429.service-now.com/: KiPPG$ybKL35Z!J!*7Md
     vars: inherit
   deploy-to-prod:
     needs: wait-for-snow-change-request
